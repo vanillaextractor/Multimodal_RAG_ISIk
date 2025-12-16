@@ -1,0 +1,21 @@
+# Security: NEVER commit secrets
+.env
+
+# Python Virtual Environment
+venv/
+env/
+.venv/
+
+# Bytecode
+__pycache__/
+*.pyc
+
+# IDE Settings
+.vscode/
+.idea/
+
+# Mac OS junk
+.DS_Store
+
+# Uploaded Data (Optional: Keep your repo small)
+*.pdf

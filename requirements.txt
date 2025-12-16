@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+sentence-transformers
+pypdf
+langchain-text-splitters
+langchain
+langchain_classic
+langchain-openai
+langchain-community
+pgvector
+python-dotenv
+streamlit
+requests
+uuid
