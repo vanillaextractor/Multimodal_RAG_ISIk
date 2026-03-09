@@ -1,0 +1,61 @@
+Query
+What is the Data Ingestion module used for?
+How do I upload a dataset into the platform?
+What file formats are supported for data ingestion?
+What kind of datasets can I upload to NPCYF?
+How do I ingest APY (Area–Production–Yield) data?
+Where can I download official APY datasets before uploading them?
+What should I check in my dataset before uploading it?
+Why does the platform validate my dataset during ingestion?
+What metadata do I need to provide when uploading a dataset?
+How do I upload rainfall or temperature data?
+What happens to my dataset after I upload it?
+How can I verify that my dataset was successfully ingested?
+What should I do if my dataset upload fails?
+How does the ETL process work after ingestion?
+Where is the ingested data stored in the platform?
+Can I edit or delete a dataset after ingestion?
+How can I track the source of a dataset I uploaded earlier?
+Can I ingest datasets for multiple years at once?
+What is the difference between dataset ingestion and ETL loading?
+How does the platform ensure the quality of ingested datasets?
+What does the Feature Engineering module do?
+What is a feature in the NPCYF platform?
+How do I create a new feature in the Feature Master?
+What information do I need to define a feature?
+Can I reuse features across different models?
+What is a Training Feature Set and why do I need it?
+How do I create a Training Feature Set?
+How do I add features to a Training Feature Set?
+How do I generate training data from my feature set?
+What is the purpose of the Training Dataset Collection?
+How can I merge datasets while creating training data?
+Can I apply transformations to features before training a model?
+How do I configure time intervals for features?
+How do I select features relevant to a specific crop?
+How can I analyze my training dataset before model building?
+How do I remove or deactivate a feature?
+What happens if a feature has missing data?
+Can I update a feature definition after it is created?
+How do feature sets improve model performance?
+What should I check before using a feature set for model training?
+How do I start building a model on the platform?
+What is a Model Building Configuration?
+How do I create a new model configuration?
+Which forecasting algorithms are available in NPCYF?
+How do I choose the right algorithm for my dataset?
+What are hyperparameters and how do I configure them?
+How do I select the training dataset for model building?
+How can I start the model training process?
+How long does model training usually take?
+How can I check if my model training was successful?
+Where can I view the trained models?
+What evaluation metrics does the platform provide?
+How can I compare different trained models?
+What should I do if my model accuracy is low?
+Can I retrain a model with updated data?
+How does the platform store trained model artifacts?
+Can I use the same model configuration for different crops?
+What happens if model training fails?
+How can I monitor the progress of model training runs?
+How do I prepare my trained model for forecasting?

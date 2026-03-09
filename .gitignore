@@ -1,21 +1,25 @@
-# Security: NEVER commit secrets
-.env
-
-# Python Virtual Environment
+# Virtual Environments
 venv/
 env/
-.venv/
+.env
 
-# Bytecode
+# Python compilation files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# IDE Settings
+# Project specific caches and models
+models/
+flashrank_cache/
+*jina-reranker*
+*.gguf
+
+# Indexes and persistent state
+bm25*.pkl
+
+evaluation/*.pdf
+
+# IDE and OS files
+.DS_Store
 .vscode/
 .idea/
-
-# Mac OS junk
-.DS_Store
-
-# Uploaded Data (Optional: Keep your repo small)
-*.pdf

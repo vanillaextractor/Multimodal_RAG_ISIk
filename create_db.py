@@ -82,7 +82,8 @@ def create_database_and_schema():
             print("Creating tables from SQLAlchemy models...")
             # Base.metadata.create_all() checks for table existence before creating
             Base.metadata.create_all(bind=connection)
-            print("Tables  and HNSW Index created successfully (if they didn't already exist).")
+            connection.commit()
+            print("Tables and HNSW Index created successfully (if they didn't already exist).")
             
             print("\nDatabase setup is complete!")
 

@@ -1,0 +1,10 @@
+[
+    {
+        "query": "What is the main topic of the document?",
+        "top_k": 3,
+        "retrieved_docs": [],
+        "prompt": "System: You are a helpful assistant for the platform. Use the provided context as the absolute ground truth to answer the user's question.\n\nGuidelines:\n1. The provided context is your only source of truth. Answer ONLY based on the retrieved context. Do not invent features, workflows, or use outside knowledge.\n2. If the context does not contain the answer at all, you must respond with: 'Information not found in the manual.'\n3. Do NOT generate the answer in a tabular or table format under any circumstances. Use plain text, paragraphs, or bullet points.\n4. You must properly cite the sources for your information. Mention the specific source document and page number (if available) when synthesizing your answer.\n\nContext:\n\nHuman: What is the main topic of the document?\nAI: I cannot provide information on the main topic of a document that I do not have access to.\nHuman: What is the main topic of the document?",
+        "answer": "I cannot provide information on the main topic of a document that I do not have access to.",
+        "latency_ms": 5254
+    }
+]

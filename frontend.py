@@ -3,9 +3,9 @@ import requests
 import uuid
 
 # --- CONFIGURATION ---
-BASE_URL = "http://192.168.0.124:8000"
+BASE_URL = "http://localhost:8000"
 CHAT_URL = f"{BASE_URL}/chat/"
-UPLOAD_URL = f"{BASE_URL}/upload-pdf/"
+UPLOAD_URL = f"{BASE_URL}/upload-pdfs/"
 
 st.set_page_config(page_title="Project ISI-TIH Chat", page_icon="🤖", layout="wide")
 st.title("🤖 ISI-TIH Chat: Multimodal RAG Chat")
@@ -15,9 +15,10 @@ st.title("🤖 ISI-TIH Chat: Multimodal RAG Chat")
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
-# 2. Initialize chat history list if it doesn't exist
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "current_document" not in st.session_state:
+    st.session_state.current_document = None
 
 # --- DISPLAY CHAT HISTORY ---
 # Iterate through the history and display messages
@@ -28,25 +29,25 @@ for message in st.session_state.messages:
 # --- SIDEBAR: DOCUMENT UPLOAD ---
 with st.sidebar:
     st.header("📂 Manage Documents")
-    st.write("Upload a PDF to add it to the knowledge base.")
+    st.write("Upload PDF files to add them to the knowledge base.")
     
     # File Uploader Widget
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+    uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
     
     # Upload Button
-    if uploaded_file is not None:
+    if uploaded_files:
         if st.button("Upload and Process"):
             with st.spinner("Uploading to backend..."):
                 try:
-                    # Prepare the file for the API request
-                    # 'file' matches the name of the argument in FastAPI: file: UploadFile = File(...)
-                    files = {"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+                    # Prepare the files for the API request
+                    # 'files' matches the name of the argument in FastAPI: files: List[UploadFile] = File(...)
+                    files_payload = [("files", (f.name, f.getvalue(), "application/pdf")) for f in uploaded_files]
                     
-                    response = requests.post(UPLOAD_URL, files=files)
+                    response = requests.post(UPLOAD_URL, files=files_payload)
                     
-                    if response.status_code == 202:
-                        st.success(f"✅ '{uploaded_file.name}' uploaded successfully!")
-                        st.info("The server is now processing chunks and embeddings in the background.")
+                    if response.status_code == 200:
+                        st.session_state.current_document = None
+                        st.success(f"✅ {len(uploaded_files)} files fully processed and ready for your queries!")
                     else:
                         st.error(f"❌ Upload failed. Status: {response.status_code}")
                         st.error(response.text)
@@ -58,6 +59,11 @@ with st.sidebar:
     st.markdown("**Session ID:**")
     st.caption(st.session_state.session_id)
     if st.button("Clear Chat History"):
+        try:
+            requests.post(f"{BASE_URL}/clear-db/")
+            st.success("Database cleared successfully.")
+        except Exception as e:
+            st.error(f"Failed to clear database: {e}")
         st.session_state.messages = []
         st.rerun()
 
@@ -87,6 +93,8 @@ if prompt := st.chat_input("Ask a question about your documents..."):
                 "question": prompt,
                 "session_id": st.session_state.session_id
             }
+            if st.session_state.current_document:
+                payload["document_name"] = st.session_state.current_document
             
             response = requests.post(CHAT_URL, json=payload)
             

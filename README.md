@@ -1,44 +1,55 @@
-***
+# Advanced Multimodal Hybrid-RAG Pipeline
 
-# Multimodal RAG Pipeline (FastAPI + PostgreSQL pgvector)
+This project is a high-performance **Retrieval-Augmented Generation (RAG)** pipeline. Originally a standard semantic search prototype, it has evolved into an advanced system supporting hierarchical section-aware chunking, hybrid retrieval (BM25 + Cosine Vector Search), cross-encoder reranking, and decoupled configuration management.
 
-This project is a high-performance Retrieval-Augmented Generation (RAG) pipeline. It allows users to upload PDF documents, automatically chunks and vectorizes the text, and stores the embeddings in a PostgreSQL database optimized with the **HNSW algorithm** for scalable semantic search.
+## ✨ Key Features
+
+1. **Hierarchical Chunking**: Uses Regex-based structural parsing to identify chapters/headings, preserving contextual boundaries.
+2. **Hybrid Search**: Combines Cosine Vector Search (via PostgreSQL `pgvector`) for semantic meaning with BM25 Keyword Search for exact term matching.
+3. **Cross-Encoder Reranking**: Utilizes Local Jina Reranker v2 (GGUF) or FlashRank to rescore chunks for maximum precision before sending context to the LLM.
+4. **Flexible LLM Endpoints**: Supports local inference (Llama 3 via `llama-cpp-python`) for ultimate data privacy, or cloud inference (Groq API) for ultra-fast generation.
+5. **Decoupled Configuration**: All logic hyperparameters (chunk sizes, rerank cutoffs, LLM paths, generation settings) are completely abstracted to `config.json` and `hierarchical_config.json`.
+6. **Multi-Document Support**: Process multiple PDFs simultaneously via the upload endpoints.
+7. **Automated Testing & Flushing**: Includes `test_model_with_restart.py` for automated load testing and `flush_db.py` to securely wipe Vector/BM25 storage.
+
+---
 
 ## 🚀 Prerequisites
 
-*   **Docker Desktop** (for running the database)
-*   **Python 3.9+**
-*   **PostgreSQL Client** (optional, e.g., DBeaver or `psql`)
+- **Docker Desktop** (for running the database container)
+- **Python 3.14.2** (CRITICAL: Deviating from this specific version may cause native binary build failures with `llama-cpp-python` or `pgvector`)
+- **Local Machine / Cloud Server** (with sufficient RAM to parse PDFs and run localized models if not using Groq)
 
 ---
 
 ## 🛠️ Step 1: Environment Setup
 
-1.  Clone the repository.
-2.  Create a virtual environment:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
-3.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  Create a `.env` file in the root directory:
-    ```ini
-    # .env
-    DATABASE_URL="postgresql://cbuser:12345@localhost:5432/knowledgedb"
-    OPENAI_API_KEY="sk-..." # (Optional: Only if using the Chat/RAG endpoint)
-    ```
+1. **Clone the repository.**
+2. **Create a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Create a `.env` file in the root directory:**
+   ```ini
+   # .env
+   DATABASE_URL="postgresql://cbuser:12345@localhost:5432/knowledgedb"
+   GROQ_API_KEY="gsk_..." # (Required ONLY if running main_groq.py)
+   ```
 
 ---
 
 ## 🐳 Step 2: Database Setup (Docker)
 
-We use the official `pgvector` image to ensure the vector extension is available.
+We rely on PostgreSQL with the official `pgvector` extension for semantic storage.
 
 ### 1. Start the Container
-Run this command to start a fresh PostgreSQL container with pgvector pre-installed:
+
+Run this command to start a PostgreSQL container with `pgvector` pre-installed:
 
 ```bash
 docker run --name multimodal-postgres-db \
@@ -49,8 +60,9 @@ docker run --name multimodal-postgres-db \
   -d pgvector/pgvector:pg16
 ```
 
-### 2. Initialize Schema & Index (Automated)
-Run the included Python script to enable the extension, create the table, and build the HNSW index automatically.
+### 2. Initialize Schema
+
+Run the included Python script to enable the extension and build the `TextChunk` tables defined in `models.py`.
 
 ```bash
 python create_db.py
@@ -58,115 +70,90 @@ python create_db.py
 
 ---
 
-## 🤓 Step 3: Manual Database Setup (SQL Reference)
+## 🏃 Step 3: Running the Backend
 
-If you prefer to set up the database manually using a SQL client (like DBeaver or `psql`), execute these commands in order.
+The repository contains four specialized execution scripts depending on your environment profile:
 
-**1. Enable the Extension:**
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
+### 1. `main_hierarchical_hybrid.py` (Most Advanced - Recommended)
 
-**2. Create the Table:**
-```sql
-CREATE TABLE text_chunks (
-    id SERIAL PRIMARY KEY,
-    document_name VARCHAR(255) NOT NULL,
-    chunk_text TEXT NOT NULL,
-    embedding VECTOR(384)
-);
-```
-
-**3. Create the HNSW Index:**
-This creates a Hierarchical Navigable Small World index for fast approximate nearest neighbor search (L2 distance).
-```sql
-CREATE INDEX hnsw_index_for_inner_product 
-ON text_chunks 
-USING hnsw (embedding vector_l2_ops);
-```
-
----
-
-## 🏃 Step 4: Run the Backend API Application
-
-Start the FastAPI server. This handles the database connections, embeddings, and vector search logic.
+The flagship pipeline. Employs Hierarchical Chunking, Hybrid Retrieval (Semantic Vector + BM25), Jina Reranking, and Local LlamaCpp generation.
 
 ```bash
-uvicorn main:app --reload
+uvicorn main_hierarchical_hybrid:app --reload
 ```
 
-The server will start at `http://127.0.0.1:8000`.
+### 2. `main_groq.py` (Low Latency Cloud generation)
 
----
-To allow access from other computers, we run the server with `--host 0.0.0.0`.
+Maintains high-security local embeddings (MiniLM) and local reranking (Jina) to protect database ingestion, but offloads generation to the ultra-fast Groq Cloud API.
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main_groq:app --reload
 ```
 
-*   **Local Access:** `http://127.0.0.1:8000`
-*   **Network Access:** `http://<YOUR_COMPUTER_IP>:8000`
+### 3. `main_hierarchical_flashrank.py` (CPU-Bound Reranking)
+
+Implements hierarchical chunking but trades the heavy Jina Cross-Encoder for the lightweight FlashRank reranker. Excellent for lower-tier hardware.
+
+```bash
+uvicorn main_hierarchical_flashrank:app --reload
+```
+
+### 4. `main_local.py` (Legacy Baseline)
+
+The original pipeline augmented with Jina reranking, but relies on blind recursive character chunking instead of section-aware logic.
+
+```bash
+uvicorn main_local:app --reload
+```
+
+_(By default, all FastAPI servers boot up at `http://localhost:8000`)_
+
 ---
 
-## 🎨 Step 5: Run the Frontend UI
+## 🎨 Step 4: Running the Streamlit UI
 
-**Important Configuration:**
-If you want to access the UI from another computer, you must tell the Frontend where the Backend lives.
-
-1.  Open `frontend.py`.
-2.  Find line 6: `BASE_URL = "http://127.0.0.1:8000"`.
-3.  **Change it** to your computer's local IP address (see instructions below), e.g., `BASE_URL = "http://192.168.1.15:8000"`.
-
-**Run the Streamlit App:**
-Open a **new terminal window** (keep the backend running in the first one) and launch the Streamlit app.
+Once the backend is live, open a **new terminal window** to start the interactive conversational UI. The frontend (`frontend.py`) connects by default to `http://localhost:8000`.
 
 ```bash
 streamlit run frontend.py
 ```
-*Frontend running at:* `http://localhost:8501`
 
-## 🧪 Usage
+### Web UI Features:
 
-Open your browser and navigate to the interactive Swagger UI: **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
-
-### Available Endpoints:
-
-1.  **POST `/upload-pdf/`**
-    *   **Input:** A `.pdf` file.
-    *   **Action:** Extracts text, splits it into chunks, generates embeddings, and saves to DB.
-    *   **Note:** Runs in the background (returns `202 Accepted`).
-
-2.  **GET `/search/`**
-    *   **Input:** `query` string.
-    *   **Action:** Converts query to vector and performs similarity search using the HNSW index.
-    *   **Output:** Returns raw text chunks relevant to the query.
-
-3.  **POST `/chat/`** (RAG / Q&A)
-    *   **Input:** `{"question": "What is the summary of the uploaded report?"}`
-    *   **Action:** 
-        1. Embeds your question.
-        2. Retrieves the top 5 most relevant chunks from your PDF.
-        3. Sends the chunks + your question to OpenAI (GPT-3.5).
-        4. Generates a natural language answer based *only* on your PDF.
-    *   **Output:** The answer and the list of source documents used.
+- **Multi-file PDF Uploads**: Drag and drop batches of training data.
+- **Session Memory**: Uses strict Session-IDs to segregate document conversations per tab.
+- **Source Attribution**: Chat responses dynamically reference exact retrieved chunks and their reranked confidence scores.
+- **Database Clearance**: Secure UI button to trigger a total database flush of embeddings and BM25 indexes.
 
 ---
 
-## ⚠️ Troubleshooting
+## 🧬 Configuration Management
 
-**Error: `type "vector" does not exist`**
-*   **Cause:** The database does not have the `pgvector` extension enabled, or you are connecting to an old local Postgres instance instead of Docker.
-*   **Fix:** Ensure you are using the `pgvector/pgvector:pg16` Docker image and have run `CREATE EXTENSION vector;`.
-**Error: `OPENAI_API_KEY not set`**
-*   **Cause:** You are trying to use `/chat/` but haven't added your API key.
-*   **Fix:** Add `OPENAI_API_KEY="sk-..."` to your `.env` file and restart the server.
+The system logic is managed by `config.json`. You can modify these settings without touching the Python code or restarting the server:
 
-**How to "Factory Reset" the Database:**
-If you need to wipe everything and start fresh:
+- **`chunking_tokens`**: Adjust base chunk size and overlap (e.g. `max_size_default`).
+- **`llm_hyperparameters`**: Tweak Llama inference (temperature, threads, n_ctx context size, grammar limits).
+- **`retriever_hyperparameters`**: Define `top_k` (amount of chunks retrieved) vs `top_n_rerank` (amount of chunks surviving cross-encoder pruning and actually passed into the LLM context).
+- **`llm_chat_template`**: Tailor the strict grounding prompt your AI agent adheres to.
+
+---
+
+## 🧪 Automated Testing & Load Evaluation
+
+The repository ships with an integration testing suite built to validate backend memory stability over long sessions:
 
 ```bash
-docker stop multimodal-postgres-db
-docker rm multimodal-postgres-db
-docker volume prune  # WARNING: Deletes all data! Type 'y' to confirm.
-# Then run the "Start the Container" command again.
+python test_model_with_restart.py
 ```
+
+**How it works:**
+
+1. Spawns the backend subprocess.
+2. Ingests the `evaluation/input.pdf` file entirely via the API.
+3. Automatically fires a batch of questions parsed from a local CSV (`rag queries - Sheet1.csv`).
+4. Preemptively resets the main server every $N$ requests to guarantee no context-window memory leaks.
+
+## 🧹 Maintenance Utils
+
+- **`python flush_db.py`**: A brute-force CLI utility to delete all PostgreSQL rows and wipe out locally-pickled `.pkl` BM25 search indices instantly.
+- **`python check_data.py`**: A quick utility script designed to verify database counts.

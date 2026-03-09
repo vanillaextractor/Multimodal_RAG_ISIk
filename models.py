@@ -23,6 +23,10 @@ class TextChunk(Base):
     document_name = Column(String(255), index=True, nullable=False)
     chunk_text = Column(Text, nullable=False)
     
+    # Structural Metadata
+    page_number = Column(Integer, index=True, nullable=True)
+    element_type = Column(String(100), index=True, nullable=True)
+    
     # The VECTOR(384) specifies the dimension of the embeddings.
     # This MUST match the output dimension of your sentence-transformer model.
     # 'all-MiniLM-L6-v2' has a dimension of 384.

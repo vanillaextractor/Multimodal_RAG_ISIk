@@ -1,0 +1,30 @@
+{
+  "flush_database_on_shutdown": false,
+  "llm_path": "models/general_model.gguf",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "chunking_tokens": {
+    "max_size_default": 650,
+    "overlap": 100
+  },
+  "llm_hyperparameters": {
+    "temperature": 0.0,
+    "max_tokens": 2048,
+    "n_ctx": 4096,
+    "n_gpu_layers": -1,
+    "n_batch": 512,
+    "n_threads": 8,
+    "repeat_penalty": 1.1,
+    "stop": ["<|eot_id|>", "<|start_header_id|>", "Human:", "Assistant:"],
+    "verbose": false
+  },
+  "retriever_hyperparameters": {
+    "top_k": 20,
+    "top_n_rerank": 3,
+    "rrf_k": 60,
+    "base_similarity_limit": 5
+  },
+  "llm_chat_template": {
+    "contextualize_q_system_prompt": "Given a chat history and the latest user question which might reference context in the chat history, formulate a standalone question which can be understood without the chat history. Do NOT answer the question, just reformulate it if needed and otherwise return it as is. Output ONLY the reformulated question and nothing else.",
+    "qa_system_prompt": "You are a helpful assistant for the platform. Use the provided context as the absolute ground truth to answer the user's question.\n\nGuidelines:\n1. The provided context is your only source of truth. Answer ONLY based on the retrieved context. Do not invent features, workflows, or use outside knowledge.\n2. If the context does not contain the answer at all, you must respond with: 'Information not found in the manual.'\n3. Do NOT generate the answer in a tabular or table format under any circumstances. Use plain text, paragraphs, or bullet points.\n4. You must properly cite the sources for your information. Mention the specific source document and page number (if available) when synthesizing your answer.\n\nContext:\n{context}"
+  }
+}
