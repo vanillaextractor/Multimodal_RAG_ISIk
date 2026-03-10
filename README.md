@@ -72,9 +72,17 @@ python create_db.py
 
 ## 🏃 Step 3: Running the Backend
 
-The repository contains four specialized execution scripts depending on your environment profile:
+The repository now features a fully dynamic master pipeline, alongside specialized execution scripts depending on your environment profile:
 
-### 1. `main_hierarchical_hybrid.py` (Most Advanced - Recommended)
+### 1. Unified Master Pipeline (`master_pipeline.py`) - **RECOMMENDED**
+
+This scripts is dynamically controlled by `master_config.json`. Depending on your config toggles, it can seamlessly switch between Hierarchical/Standard chunking, Hybrid/Vector retrieval, and Jina/Flashrank reranking.
+
+```bash
+uvicorn master_pipeline:app --reload
+```
+
+### 2. `main_hierarchical_hybrid.py` (Specific local logic)
 
 The flagship pipeline. Employs Hierarchical Chunking, Hybrid Retrieval (Semantic Vector + BM25), Jina Reranking, and Local LlamaCpp generation.
 
