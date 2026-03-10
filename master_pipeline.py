@@ -306,7 +306,7 @@ class MasterRetriever(BaseRetriever):
         finally:
             db.close()
 
-        combined_docs = []
+        combined_docs_raw = []
 
         # 2. Hybrid/Keyword Search (BM25)
         if PIPELINE_STRATEGY["search"] == "hybrid":
@@ -316,14 +316,20 @@ class MasterRetriever(BaseRetriever):
                 if self.document_name:
                     bm25_results = [d for d in bm25_results if d.metadata["source"] == self.document_name]
 
-            combined_docs_dict = {}
-            for doc in vector_results + bm25_results:
-                if doc.page_content not in combined_docs_dict:
-                    combined_docs_dict[doc.page_content] = doc
-
-            combined_docs = list(combined_docs_dict.values())
+            combined_docs_raw = vector_results + bm25_results
         else:
-            combined_docs = vector_results
+            combined_docs_raw = vector_results
+
+        # Deduplicate based on core chunk text (ignoring metadata prefixes)
+        combined_docs_dict = {}
+        for doc in combined_docs_raw:
+            parts = doc.page_content.split("Content:\n")
+            core_text = parts[-1].strip() if len(parts) > 1 else doc.page_content.strip()
+            
+            if core_text not in combined_docs_dict:
+                combined_docs_dict[core_text] = doc
+
+        combined_docs = list(combined_docs_dict.values())
 
         # 3. Rerank
         final_documents = []

@@ -265,11 +265,14 @@ class HybridHierarchicalRetriever(BaseRetriever):
             if self.document_name:
                 bm25_results = [d for d in bm25_results if d.metadata["source"] == self.document_name]
 
-        # 3. Combine results (Simple Union for now, duplicates handled by reranker or by text match)
+        # 3. Combine results and deduplicate based on core chunk text
         combined_docs_dict = {}
         for doc in vector_results + bm25_results:
-            if doc.page_content not in combined_docs_dict:
-                combined_docs_dict[doc.page_content] = doc
+            parts = doc.page_content.split("Content:\n")
+            core_text = parts[-1].strip() if len(parts) > 1 else doc.page_content.strip()
+            
+            if core_text not in combined_docs_dict:
+                combined_docs_dict[core_text] = doc
 
         combined_docs = list(combined_docs_dict.values())
 
